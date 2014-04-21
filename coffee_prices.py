@@ -36,8 +36,10 @@ tree = html.fromstring(page.text)
 # following structure:
 # Product type | Place | Last price | Net change | Previous prize | current day
 # | prev day
+# We will skip delta column (1-index 4) because it's in a span and we can
+# just substract it.
 
-readcol = lambda index: tree.xpath('//table/tr[*]/td[%s]/text()' % index)
+readcol = rc = lambda index: tree.xpath('//table/tr[*]/td[%s]/text()' % index)
 
 
 def parsetable():
@@ -45,19 +47,9 @@ def parsetable():
     Parse coffee prices table.
 
     :return: a generator, that yields a tuple of row values
-    :rtype: PriceData
+    :rtype: generator of PriceData
     """
-    # TODO return a named tuple to make it self-documented.
-    ptype = readcol(1)
-    place = readcol(2)
-    lastp = readcol(3)
-    prevp = readcol(5)
-    curda = readcol(6)
-    prevd = readcol(7)
-
-    rtuple = zip(ptype, place, lastp, prevp, curda, prevd)
-
-    for row in rtuple:
+    for row in zip(rc(1), rc(2), rc(3), rc(5), rc(6), rc(7)):
         yield PriceData(*row)
 
 if __name__ == "__main__":
