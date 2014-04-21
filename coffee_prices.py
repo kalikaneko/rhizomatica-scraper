@@ -18,6 +18,7 @@
 Scraper for getting coffee prices in different international markets.
 """
 from collections import namedtuple
+from functools import partial
 
 from lxml import html
 import requests
@@ -29,9 +30,6 @@ COUNTRY = u"México"
 PriceData = namedtuple('PriceData', ["product_type", "place", "last_price",
                                      "prev_price", "current_day", "prev_day"])
 
-page = requests.get(TARGET)
-tree = html.fromstring(page.text)
-
 # The page has a single table, that on 2014-04-20 has the
 # following structure:
 # Product type | Place | Last price | Net change | Previous prize | current day
@@ -39,7 +37,8 @@ tree = html.fromstring(page.text)
 # We will skip delta column (1-index 4) because it's in a span and we can
 # just substract it.
 
-readcol = rc = lambda index: tree.xpath('//table/tr[*]/td[%s]/text()' % index)
+readcol = lambda tree, index: tree.xpath(
+    '//table/tr[*]/td[%s]/text()' % index)
 
 
 def parsetable():
@@ -49,6 +48,10 @@ def parsetable():
     :return: a generator, that yields a tuple of row values
     :rtype: generator of PriceData
     """
+    page = requests.get(TARGET)
+    tree = html.fromstring(page.text)
+    rc = partial(readcol, tree)
+
     for row in zip(rc(1), rc(2), rc(3), rc(5), rc(6), rc(7)):
         yield PriceData(*row)
 
